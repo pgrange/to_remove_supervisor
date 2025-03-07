@@ -1,0 +1,34 @@
+name: Supervise Repositories
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 12 * * *'  # Vérification quotidienne à 12h UTC
+  workflow_dispatch:
+
+jobs:
+  check-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier l'existence et l'intégrité du fichier
+        run: |
+          FILE_URL="https://raw.githubusercontent.com/pgrange/to_remove_lambda/main/.github/workflows/check_config.yml"
+          EXPECTED_HASH="6524db1032720a496a33efa3b66f4e7d66c05c4c43dd206f4c917ab08c1a8159"
+
+          # Télécharger le fichier
+          curl -fsSL "$FILE_URL" -o config.yml || { echo "❌ Fichier introuvable !"; exit 1; }
+
+          # Calculer le hash
+          FILE_HASH=$(sha256sum config.yml | awk '{ print $1 }')
+
+          # Comparer avec le hash attendu
+          if [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+            echo "❌ Le fichier a été modifié !"
+            echo "Attendu : $EXPECTED_HASH"
+            echo "Obtenu  : $FILE_HASH"
+            exit 1
+          fi
+
+          echo "✅ Fichier vérifié avec succès !"
